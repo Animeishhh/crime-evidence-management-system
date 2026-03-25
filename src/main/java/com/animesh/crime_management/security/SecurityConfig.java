@@ -1,6 +1,7 @@
 package com.animesh.crime_management.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,15 +29,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/auth/register").permitAll()
+                .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/users/**").hasRole("ADMIN")
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/evidence/**", "/cases/**", "/logs/**", "/dashboard/**").hasAnyRole("ADMIN", "OFFICER", "VIEWER")
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/evidence/**", "/cases/**").hasAnyRole("ADMIN", "OFFICER")
-                .requestMatchers(org.springframework.http.HttpMethod.PUT, "/evidence/**", "/cases/**").hasAnyRole("ADMIN", "OFFICER")
-                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/evidence/**", "/cases/**").hasAnyRole("ADMIN", "OFFICER")
+                .requestMatchers("/cases/**", "/evidence/**", "/logs/**", "/dashboard/**").hasAnyRole("ADMIN", "OFFICER", "VIEWER")
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Unauthorized\"}");
+            }))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

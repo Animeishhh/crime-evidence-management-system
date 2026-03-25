@@ -22,6 +22,11 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getRequestURI().startsWith("/auth/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
@@ -32,15 +37,17 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            username = jwtUtil.extractUsername(token);
-            role = jwtUtil.extractRole(token);
+            try {
+                username = jwtUtil.extractUsername(token);
+                role = jwtUtil.extractRole(token);
+            } catch (Exception e) {
+                // Invalid token — continue unauthenticated
+            }
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(token, username)) {
-                
                 String authRole = role != null ? role.toUpperCase() : "VIEWER";
-
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         username, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + authRole)));
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

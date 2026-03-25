@@ -1,13 +1,14 @@
 # Logs
 *.log
+*.txt
+
+# Uploads folder
+uploads/
 
 # Build files
 target/
 
-# Maven wrapper logs
-.log.
-
-# Node modules (frontend)
+# Node modules
 node_modules/
 
 # VS Code
@@ -17,8 +18,8 @@ node_modules/
 .idea
 *.iml
 
-# OS files
+# OS
 .DS_Store
 
-# Env files
+# Env
 .env
